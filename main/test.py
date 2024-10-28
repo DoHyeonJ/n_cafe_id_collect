@@ -1,16 +1,16 @@
 import requests
 import json
 
-header = {'Cookie': 'BUC=_iy07Svi574lnh2iVp3ffhI9_ADnP4mGCxBO2u-0h58=; NM_srt_chzzk=1; PM_CK_loc=290e49fae29e5c027ce9fd02a78e28e5a08029d311a79232d5f52710aa5854de; NID_JKL=+qo1m7EuCgqB0grQZGQwVLByrHy6LSHhZjyYMkWZLi4=; nid_inf=506380252; NID_SES=AAABk7tb7sKwbEaopOGXZ6ciLXPpAZIYzC//otbteD5sXosWcheNz16Yf9qn4fVRpCPvNZ1B3iK6HkdpWUmthZdbS2p1IVNsVMePsPa4chugKW8CUQUp+EaHzAcD55g+LO23FFi8AE45DqNt0qb1NnPjEOyDEr9Opk6mmFOohJuL5xVg1uVwV+GBv6PGUIWV1OZxflHWuW8xZvlw9GgzT+fO9vCVXgskZdnqElno6EqF6P82BcUj034IQ9leUHPFavk9c0FNtXF9IDkutV3ADmOzho9wkG39h3MjXl+u7EZ3CQy7mbNAtVxFwpmVfMCoBqUXyTKU8wbgRbENWXSBi40Gq46Sc16DHumoEC+8Weh8APdzPfo/aAJZPBw0Cci0yoeZIc6lrY87MIWDIaazBrqThW4e9VFRb5zzOvAaU+eX72l0G4ma+ucF/fPweDqlwBB+hMi5weq2zpst0Ce8KlSelkDJVsY2KQUreFBGJW2cOOYPizzRGULGRChTaTqHqziW7pcq+f59OWc/cbi/ncgx5WEDY6aFtQW1U+QuLQggrNNo; NACT=1; NID_AUT=9zpLSw78Wu12sLf5EcMw6QAEh6ELC38NS3y1l5oEUx68LzgRQpgHUeEjw/aWtYd/; NNB=SOR432WYFIIWO; NAC=d2QeDoAs7FNPB;', 'Referer': 'https://cafe.naver.com/', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36'}
+header = {'Cookie': 'BUC=Z3aR2lKzpwdhszQqRmCyDbgIIWLxPqc7ChG7jqC84UQ=; NM_srt_chzzk=1; PM_CK_loc=290e49fae29e5c027ce9fd02a78e28e5a08029d311a79232d5f52710aa5854de; NID_JKL=vpFvtmGde+DwZDSFGIWUH1gDnestgo4ccg0OUKxn1rY=; nid_inf=346058160; NID_SES=AAABoaWJwpy/mywj5EYPKXvGNy/nhLHHYh7MCK6G37RJ0NgjBORbpcFQn9hzfkvRSa3/AESSaPMstlYUcjGZ0brt9C61SF03ZRDhOUhEWCUuob04yrA5B2jnY2nXFn76fWj97J8qPrH8ZeNiw7QutJiPoWegTEy/4FowKfml75jqmYuzXSUAFCbuEk+zJYVxitCaqVGXVtb3kqtuId1Vuh5trcNLEs4o6VP8TaWlUca5VsnJTSk2ko7GTO5N1JE3ltuQ4gzr1XKeCaNddFmwfNk+u/Ztz+OGEUmtAKr7QJFv9JQ7rOfMQ62yhYkGYeaiNARf3XcewNWfbOIUzQ4E9I7nXIcbjU733NmAY9D2ipLi4eVaoozjl96NErkSyiaPnZUVk1zA6oCETVaDLenPzrgBpzP0LnXBsES/jcB8x29lzBGnz/qE8wntuT257OtzunhdZe5JnTmqxJHbYQdCFgqKjCOIj2oodtVJy37mImjidalJ9gsOezU6loCCucyyXTCN4MCG+I2Bk92Pg5zP4wEo20c/p7pe78QCE8Je+3Xbu823QKy/rnzO72K3LsHaOVQBwg==; NACT=1; NID_AUT=hwFlGA9uXLejH+CMwqnpM/dXDjZXgg9nLgVb1RisWn2TXxipQrEbcSwMF5FcVBzM; NNB=AXDFWGRQNEOGO; NAC=4cfBCwACQ997B;', 'Referer': 'https://cafe.naver.com/', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36'}
+
 
 # 1) 로그인 하고, 카페 게시판 추출하고 특정 게시판에 존재하는 게시글들 ID랑 댓글 ID추출하는
 
 # 2) 특정 게시글 링크를 넣고 단발성으로 추출하는
 
 # 3) 게시글 정보도 같이 추출 -> 엑셀파일로 만들어줌 \
+# 
 
-def get_board_list():
-    pass
 
 # 게시글 유저ID 추출
 def get_article_user_id(cafe_id, article_id):
@@ -20,9 +20,12 @@ def get_article_user_id(cafe_id, article_id):
     response_json = response.json()
 
     writer_id = response_json['result']['article']['writer']['id']
+    nick = response_json['result']['article']['writer']['nick']
     subject = response_json['result']['article']['subject']
+    
+    print(writer_id, nick, subject)
 
-    return writer_id, subject
+    return writer_id, subject, nick
 
 # 댓글 유저ID 추출
 def get_comment_user_id(cafe_id, article_id, page_num=1):
@@ -51,6 +54,18 @@ def get_comment_user_id(cafe_id, article_id, page_num=1):
 
     return user_ids
 
+# 로그인한 계정의 카페 리스트 GET
+def get_cafe_list():
+    api_url = "https://apis.naver.com/cafe-home-web/cafe-home/v1/cafes/join?page=1&perPage=1000&type=join&recentUpdates=true"
+
+    response = requests.get(api_url, headers=header)
+
+    data = response.json()
+    
+    cafe_info = [(cafe['cafeId'], cafe['cafeUrl'], cafe['cafeName']) for cafe in data['message']['result']['cafes']]
+
+    return cafe_info
+
 # 쪽지 제한 수 GET
 def get_limit_message():
     pass
@@ -59,21 +74,48 @@ def get_limit_message():
 def post_message():
     pass
 
+# menu_id를 비우고 요청할 경우 전체 글 조회 #
+def call_board_list():
+    page = "1"
+    result = []
+
+    url = f"https://apis.naver.com/cafe-web/cafe2/ArticleListV2dot1.json?search.clubid={25228091}&search.queryType=lastArticle&search.menuid=all&search.page={page}&search.perPage={100}&adUnit=MW_CAFE_ARTICLE_LIST_RS"
+    try:
+        response = requests.get(url, headers=header)
+        if response.status_code == 200:
+            response_json = response.json()
+            article_list = response_json['message']['result']['articleList']
+            article_list = sorted(article_list, key=lambda x:x['articleId'])
+            for article in article_list:
+                article_id = article['articleId']
+                subject = article['subject']
+                writer = article['writerNickname']
+                result.append({"article_id": article_id, "subject": subject, "writer": writer})
+
+        print(len(result))
+        return result
+    except:
+        pass
+
 if __name__ == "__main__":
-    article_user_info = get_article_user_id("15723206", "2148422")
-    comment_user_list = get_comment_user_id("15723206", "2148422")
-    get_limit_message()
-    post_message()
+    # article_user_info = get_article_user_id("15723206", "2148422")
+    # comment_user_list = get_comment_user_id("15723206", "2148422")
+    # get_limit_message()
+    # post_message()
 
-    print(article_user_info)
+    # print(article_user_info)
     
-    user_str = ""
-    added_ids = set()  # 이미 추가된 ID를 저장할 집합
-    for comment in comment_user_list:
-        if comment['id'] not in added_ids:
-            user_str += comment['id'] + ","
-            added_ids.add(comment['id'])
+    # user_str = ""
+    # added_ids = set()  # 이미 추가된 ID를 저장할 집합
+    # for comment in comment_user_list:
+    #     if comment['id'] not in added_ids:
+    #         user_str += comment['id'] + ","
+    #         added_ids.add(comment['id'])
 
-    user_str = user_str.rstrip(",")  # 마지막 쉼표 제거
-    print(user_str)
+    # user_str = user_str.rstrip(",")  # 마지막 쉼표 제거
+    # print(user_str)
 
+    # get_cafe_list()
+
+    response = call_board_list()
+    # print(response)
