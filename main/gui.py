@@ -1,17 +1,23 @@
 import sys
 import traceback
 import logging
+import json
+import os
 from task_thread import TaskThread
-from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QLineEdit, QPushButton, QComboBox, QTextEdit, QVBoxLayout, QHBoxLayout, QGridLayout, QDateTimeEdit, QSpinBox, QRadioButton, QGroupBox, QCheckBox, QButtonGroup, QFileDialog, QTableWidget, QMessageBox, QProgressBar
+from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QLineEdit, QPushButton, QComboBox, QTextEdit, QVBoxLayout, QHBoxLayout, QGridLayout, QDateTimeEdit, QSpinBox, QRadioButton, QGroupBox, QCheckBox, QButtonGroup, QFileDialog, QTableWidget, QMessageBox, QProgressBar, QInputDialog
 from PyQt5.QtCore import QTimer, QUrl
-from PyQt5.QtGui import QFont, QDesktopServices
+from PyQt5.QtGui import QFont, QDesktopServices, QIcon
 from PyQt5.QtCore import Qt
 from util_log import UtilLog
 from util_licence import UtilLicence
+import datetime
 from api import Api
 
 class MyApp(QWidget):
     def __init__(self):
+        # licence.json 파일 체크 및 생성
+        if not self.check_and_create_license():
+            sys.exit()
         self.util_licence = UtilLicence()
         self.group_width = 630
         self.util_log = None
@@ -21,8 +27,104 @@ class MyApp(QWidget):
         self.cafe_id = None
         self.cafe_url = None
         self.api = Api()
+        self.expires_at = None
         super().__init__()
+        self.setWindowIcon(QIcon('main_logo.ico'))
         self.initUI()
+
+    def check_and_create_license(self):
+        """
+        라이선스 파일을 체크하고 없으면 생성하는 함수
+        Returns:
+            bool: 라이선스 체크/생성 성공 여부
+        """
+        if not os.path.exists('licence.json'):
+            # 기본 라이선스 객체 생성
+            licence_data = {
+                "licence": ""
+            }
+            
+            # UtilLicence 인스턴스 생성
+            util_licence = UtilLicence()
+            
+            while True:  # 유효한 라이선스를 입력할 때까지 반복
+                # 라이선스 입력 대화상자 생성
+                input_dialog = QInputDialog(None)
+                input_dialog.setWindowTitle('라이선스 키 입력')
+                input_dialog.setLabelText('라이선스 키를 입력해주세요:')
+                input_dialog.resize(400, 200)  # 대화상자 크기 설정
+                
+                # 스타일시트 적용
+                input_dialog.setStyleSheet("""
+                    QInputDialog {
+                        background-color: #2b2b2b;
+                    }
+                    QLabel {
+                        color: #dcdcdc;
+                        font-size: 12pt;
+                        padding: 10px;
+                    }
+                    QLineEdit {
+                        background-color: #3c3f41;
+                        border: 1px solid #4a4a4a;
+                        padding: 8px;
+                        border-radius: 4px;
+                        color: #dcdcdc;
+                        font-size: 11pt;
+                        min-width: 350px;
+                        min-height: 20px;
+                    }
+                    QPushButton {
+                        background-color: #3c3f41;
+                        color: white;
+                        border: 1px solid #5c5c5c;
+                        padding: 8px 15px;
+                        border-radius: 4px;
+                        min-width: 100px;
+                    }
+                    QPushButton:hover {
+                        background-color: #4a4a4a;
+                    }
+                """)
+                
+                ok = input_dialog.exec_()
+                licence_key = input_dialog.textValue().strip()
+                
+                if ok and licence_key:
+                    # 라이선스 유효성 검사
+                    is_valid, expires_at = util_licence.check_license(licence_key)
+                    
+                    if is_valid:
+                        licence_data["licence"] = licence_key
+                        
+                        # licence.json 파일 생성 및 데이터 저장
+                        with open('licence.json', 'w', encoding='utf-8') as f:
+                            json.dump(licence_data, f, indent=4, ensure_ascii=False)
+                            
+                        QMessageBox.information(
+                            None,
+                            '알림',
+                            '유효한 라이선스가 확인되었습니다.\n프로그램을 다시 실행해주세요.'
+                        )
+                        return False
+                    else:
+                        retry = QMessageBox.question(
+                            None,
+                            '경고',
+                            f'[ 유효하지 않은 라이선스입니다. ]\n사유: {expires_at}\n\n다시 시도하시겠습니까?',
+                            QMessageBox.Yes | QMessageBox.No
+                        )
+                        if retry == QMessageBox.No:
+                            return False
+                else:
+                    QMessageBox.warning(
+                        None,
+                        '경고',
+                        '라이선스 키를 입력하지 않았습니다. 프로그램을 종료합니다.'
+                    )
+                    return False
+        return True
+
 
     def initUI(self):
         # Set font
@@ -244,6 +346,15 @@ class MyApp(QWidget):
         qna_layout.addWidget(discord_button, stretch=4)
         setting_control_box_layout.addLayout(qna_layout)
 
+        # 만료일자 표시 레이아웃 추가
+        expires_layout = QHBoxLayout()
+        self.expires_label = QLabel('라이선스 만료일:')
+        self.expires_date_label = QLabel("확인중...")
+        
+        expires_layout.addWidget(self.expires_label, stretch=1)
+        expires_layout.addWidget(self.expires_date_label, stretch=4)
+        setting_control_box_layout.addLayout(expires_layout)
+
         control_group.setLayout(setting_control_box_layout)
 
         monitor_group = QGroupBox()
@@ -281,17 +392,21 @@ class MyApp(QWidget):
         self.util_log.add_log("프로그램이 실행되었습니다.")
 
         licence_key = self.util_licence.get_licence_key()
-        if licence_key != "naverautocommentmasterkey20240722":
-            if not licence_key:
-                self.util_log.add_log("라이선스 키가 없습니다. licence.json 파일을 확인해주세요.", "red")
-                self.util_log.add_log("5초 후 프로그램이 종료됩니다.", "red")
-                QTimer.singleShot(5000, self.close_application)
+        if not licence_key:
+            QMessageBox.warning(self, '경고', f"라이선스 키가 없습니다. licence.json 파일을 확인해주세요.\n5초 후 프로그램이 종료됩니다.")
+            QDesktopServices.openUrl(QUrl("https://open.kakao.com/o/sEAjJBEg"))
+            QTimer.singleShot(5000, self.close_application)
+        else:
+            # 새로운 라이선스 검증 로직 호출
+            is_valid, expires_at = self.util_licence.check_license(licence_key)
+            if is_valid:
+                self.update_expires_date(expires_at)
+                self.util_log.add_log(f"라이선스가 유효성 체크 완료", "green")
             else:
-                exists, ip = self.util_licence.value_exists(licence_key)
-                if not exists:
-                    self.util_log.add_log("잘못된 라이선스 키 입니다. licence.json 파일을 확인해주세요.", "red")
-                    self.util_log.add_log("5초 후 프로그램이 종료됩니다.", "red")
-                    QTimer.singleShot(5000, self.close_application)
+                self.update_expires_date(None)  # 또는 self.update_expires_date(expires_at)
+                QMessageBox.warning(self, '경고', f"{expires_at}")
+                QDesktopServices.openUrl(QUrl("https://open.kakao.com/o/sEAjJBEg"))
+                self.close_application()
 
     # 버튼 클릭 시 링크로 연결되는 함수 정의
     def open_kakao_chat(self):
@@ -331,6 +446,8 @@ class MyApp(QWidget):
             cafe_list = self.api.get_cafe_list()
         
             self.cafe_list = cafe_list
+
+            self.cafe_list_combo.clear()
 
             cafe_names = [cafe[2] for cafe in cafe_list]  # cafe[2]는 cafeName
 
@@ -456,6 +573,21 @@ class MyApp(QWidget):
         self.setting_init_button.setEnabled(True)
         self.login_button.setEnabled(True)
         self.cafe_url_chech_btn.setEnabled(True)
+
+    # 새로운 함수 추가
+    def update_expires_date(self, expires_at):
+        """라이선스 만료일자를 UI에 업데이트하는 함수"""
+        if expires_at:
+            try:
+                expires_date = datetime.datetime.strptime(expires_at, "%Y-%m-%d")
+                self.expires_date_label.setText(expires_at)
+                self.expires_date_label.setStyleSheet("color: #4CAF50;")  # 초록색
+            except:
+                self.expires_date_label.setText("날짜 형식 오류")
+                self.expires_date_label.setStyleSheet("color: #f44336;")  # 빨간색
+        else:
+            self.expires_date_label.setText("만료일자 없음")
+            self.expires_date_label.setStyleSheet("color: #f44336;")  # 빨간색
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
